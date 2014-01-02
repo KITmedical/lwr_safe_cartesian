@@ -27,7 +27,7 @@ class LwrSafeCartesian
 
 
     // constructors
-    LwrSafeCartesian(const std::string& p_setJointTopic, const std::string& p_getJointTopic, const std::string& p_setCartesianTopic, const std::string& p_getCartesianTopic, const std::string& p_stateTopic, const std::string& p_directSetJointTopic, const std::string& p_directGetJointTopic, const std::string& p_directStateTopic);
+    LwrSafeCartesian(const std::string& p_robotName, const std::string& p_setJointTopic, const std::string& p_getJointTopic, const std::string& p_setCartesianTopic, const std::string& p_getCartesianTopic, const std::string& p_stateTopic, const std::string& p_directSetJointTopic, const std::string& p_directGetJointTopic, const std::string& p_directStateTopic);
 
     // overwritten methods
 
@@ -47,6 +47,7 @@ class LwrSafeCartesian
     void publishToTF();
 
     // variables
+    std::string m_robotName;
     std::string m_setJointTopic;
     std::string m_getJointTopic;
     std::string m_setCartesianTopic;
@@ -56,6 +57,8 @@ class LwrSafeCartesian
     std::string m_directSetJointTopic;
     std::string m_directGetJointTopic;
     std::string m_directStateTopic;
+
+    std::vector<std::string> m_jointNames;
 
     ros::NodeHandle m_node;
     ros::Subscriber m_setJointTopicSub;

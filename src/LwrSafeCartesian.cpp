@@ -11,8 +11,9 @@
 
 
 /*---------------------------------- public: -----------------------------{{{-*/
-LwrSafeCartesian::LwrSafeCartesian(const std::string& p_setJointTopic, const std::string& p_getJointTopic, const std::string& p_setCartesianTopic, const std::string& p_getCartesianTopic, const std::string& p_stateTopic, const std::string& p_directSetJointTopic, const std::string& p_directGetJointTopic, const std::string& p_directStateTopic)
-  :m_setJointTopic(p_setJointTopic),
+LwrSafeCartesian::LwrSafeCartesian(const std::string& p_robotName, const std::string& p_setJointTopic, const std::string& p_getJointTopic, const std::string& p_setCartesianTopic, const std::string& p_getCartesianTopic, const std::string& p_stateTopic, const std::string& p_directSetJointTopic, const std::string& p_directGetJointTopic, const std::string& p_directStateTopic)
+  :m_robotName(p_robotName),
+   m_setJointTopic(p_setJointTopic),
    m_getJointTopic(p_getJointTopic),
    m_setCartesianTopic(p_setCartesianTopic),
    m_getCartesianTopic(p_getCartesianTopic),
@@ -28,6 +29,11 @@ LwrSafeCartesian::LwrSafeCartesian(const std::string& p_setJointTopic, const std
   m_targetJointState.position.resize(LWR_JOINTS, 0);
   m_targetJointState.velocity.resize(LWR_JOINTS, 0);
   m_targetJointState.effort.resize(LWR_JOINTS, 0);
+
+  m_jointNames.resize(LWR_JOINTS);
+  for (size_t jointIdx = 0; jointIdx < LWR_JOINTS; jointIdx++) {
+    m_jointNames[jointIdx] = m_robotName + "_" + Lwr::jointNames[jointIdx] + "_joint";
+  }
 
   m_setJointTopicSub = m_node.subscribe<sensor_msgs::JointState>(m_setJointTopic, 1, &LwrSafeCartesian::setJointCallback, this);
   m_getJointTopicPub = m_node.advertise<sensor_msgs::JointState>(m_getJointTopic, 1);
@@ -109,6 +115,7 @@ LwrSafeCartesian::directGetJointCallback(const sensor_msgs::JointState::ConstPtr
   //std::cout << "directGetJointCallback: jointsMsg=\n" << *jointsMsg << std::endl;
  
   m_lastJointState = *jointsMsg;
+  m_lastJointState.name = m_jointNames;
 
   LwrXCart cartXPose;
   LwrJoints joints;
