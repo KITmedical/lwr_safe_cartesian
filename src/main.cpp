@@ -12,6 +12,10 @@ main(int argc, char** argv)
   std::string getCartesianTopic = "/robots/lwr/get_cartesian";
   std::string stateTopic = "/robots/lwr/state";
 
+  std::string directSetJointTopic = "/robots/lwr/direct/set_joint";
+  std::string directGetJointTopic = "/robots/lwr/direct/get_joint";
+  std::string directStateTopic = "/robots/direct/lwr/state";
+
   const char optstring[] = "";
   struct option longopts[] = {
     { "setjointtopic", required_argument, NULL, 0 },
@@ -19,6 +23,9 @@ main(int argc, char** argv)
     { "setcartesiantopic", required_argument, NULL, 0 },
     { "getcartesiantopic", required_argument, NULL, 0 },
     { "statetopic", required_argument, NULL, 0 },
+    { "directsetjointtopic", required_argument, NULL, 0 },
+    { "directgetjointtopic", required_argument, NULL, 0 },
+    { "directstatetopic", required_argument, NULL, 0 },
   };
   int opt;
   int optindex;
@@ -35,12 +42,18 @@ main(int argc, char** argv)
         getCartesianTopic = optarg;
       } else if (strcmp(longopts[optindex].name, "statetopic") == 0) {
         stateTopic = optarg;
+      } else if (strcmp(longopts[optindex].name, "directsetjointtopic") == 0) {
+        directSetJointTopic = optarg;
+      } else if (strcmp(longopts[optindex].name, "directgetjointtopic") == 0) {
+        getJointTopic = optarg;
+      } else if (strcmp(longopts[optindex].name, "directstatetopic") == 0) {
+        directStateTopic = optarg;
       }
       break;
     }
   }
 
-  LwrSafeCartesian lwrSafeCartesian(setJointTopic, getJointTopic, setCartesianTopic, getCartesianTopic, stateTopic);
+  LwrSafeCartesian lwrSafeCartesian(setJointTopic, getJointTopic, setCartesianTopic, getCartesianTopic, stateTopic, directSetJointTopic, directGetJointTopic, directStateTopic);
 
   std::cout << "Spinning" << std::endl;
   ros::spin();

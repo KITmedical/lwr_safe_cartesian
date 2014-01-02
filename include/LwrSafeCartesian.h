@@ -27,7 +27,7 @@ class LwrSafeCartesian
 
 
     // constructors
-    LwrSafeCartesian(const std::string& p_setJointTopic, const std::string& p_getJointTopic, const std::string& p_setCartesianTopic, const std::string& p_getCartesianTopic, const std::string& p_stateTopic);
+    LwrSafeCartesian(const std::string& p_setJointTopic, const std::string& p_getJointTopic, const std::string& p_setCartesianTopic, const std::string& p_getCartesianTopic, const std::string& p_stateTopic, const std::string& p_directSetJointTopic, const std::string& p_directGetJointTopic, const std::string& p_directStateTopic);
 
     // overwritten methods
 
@@ -40,7 +40,10 @@ class LwrSafeCartesian
     // methods
     void setJointCallback(const sensor_msgs::JointState::ConstPtr& jointsMsg);
     void setCartesianCallback(const geometry_msgs::Pose::ConstPtr& poseMsg);
-    void publish();
+    void directGetJointCallback(const sensor_msgs::JointState::ConstPtr& jointsMsg);
+    void directStateCallback(const std_msgs::String::ConstPtr& stateMsg);
+    void publishToHardware();
+    void publishToApplication();
 
     // variables
     std::string m_setJointTopic;
@@ -49,14 +52,23 @@ class LwrSafeCartesian
     std::string m_getCartesianTopic;
     std::string m_stateTopic;
 
+    std::string m_directSetJointTopic;
+    std::string m_directGetJointTopic;
+    std::string m_directStateTopic;
+
     ros::NodeHandle m_node;
     ros::Subscriber m_setJointTopicSub;
     ros::Publisher m_getJointTopicPub;
     ros::Subscriber m_setCartesianTopicSub;
     ros::Publisher m_getCartesianTopicPub;
     ros::Publisher m_stateTopicPub;
-    sensor_msgs::JointState m_currentJointState;
-    geometry_msgs::Pose m_currentCartesianState;
+    ros::Subscriber m_directGetJointTopicSub;
+    ros::Publisher m_directSetJointTopicPub;
+    ros::Subscriber m_directStateTopicSub;
+    sensor_msgs::JointState m_lastJointState;
+    sensor_msgs::JointState m_targetJointState;
+    geometry_msgs::Pose m_lastCartesianState;
+    geometry_msgs::Pose m_targetCartesianState;
 };
 
 #endif // _LWR_SAFE_CARTESIAN_H_
