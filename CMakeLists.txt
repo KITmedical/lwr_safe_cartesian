@@ -97,6 +97,7 @@ SET(CMAKE_CXX_FLAGS "-O2 -Wall -Werror")
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  include
 )
 
 ## Declare a cpp library
@@ -105,16 +106,19 @@ include_directories(
 # )
 
 ## Declare a cpp executable
-# add_executable(lwr_safe_cartesian_node src/lwr_safe_cartesian_node.cpp)
+add_executable(lwr_safe_cartesian
+  src/LwrSafeCartesian.cpp
+  src/main.cpp
+)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(lwr_safe_cartesian_node lwr_safe_cartesian_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(lwr_safe_cartesian_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(lwr_safe_cartesian
+  ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##
