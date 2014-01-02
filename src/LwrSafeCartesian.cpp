@@ -142,12 +142,14 @@ LwrSafeCartesian::directStateCallback(const std_msgs::String::ConstPtr& stateMsg
 void
 LwrSafeCartesian::publishToHardware()
 {
+  m_targetJointState.header.stamp = ros::Time::now();
   m_directSetJointTopicPub.publish(m_targetJointState);
 }
 
 void
 LwrSafeCartesian::publishToApplication()
 {
+  m_lastJointState.header.stamp = ros::Time::now();
   m_getJointTopicPub.publish(m_lastJointState);
   m_getCartesianTopicPub.publish(m_lastCartesianPose);
 }
