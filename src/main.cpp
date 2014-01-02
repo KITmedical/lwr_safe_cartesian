@@ -6,15 +6,15 @@ main(int argc, char** argv)
 {
   ros::init(argc, argv, "lwr_safe_cartesian");
 
-  std::string setJointTopic = "/robots/lwr/set_joint";
-  std::string getJointTopic = "/robots/lwr/get_joint";
-  std::string setCartesianTopic = "/robots/lwr/set_cartesian";
-  std::string getCartesianTopic = "/robots/lwr/get_cartesian";
-  std::string stateTopic = "/robots/lwr/state";
+  std::string setJointTopic = "lwr/set_joint";
+  std::string getJointTopic = "lwr/get_joint";
+  std::string setCartesianTopic = "lwr/set_cartesian";
+  std::string getCartesianTopic = "lwr/get_cartesian";
+  std::string stateTopic = "lwr/state";
 
-  std::string directSetJointTopic = "/robots/lwr/direct/set_joint";
-  std::string directGetJointTopic = "/robots/lwr/direct/get_joint";
-  std::string directStateTopic = "/robots/direct/lwr/state";
+  std::string directSetJointTopic = "lwr/direct/set_joint";
+  std::string directGetJointTopic = "lwr/direct/get_joint";
+  std::string directStateTopic = "lwr/direct/state";
 
   const char optstring[] = "";
   struct option longopts[] = {

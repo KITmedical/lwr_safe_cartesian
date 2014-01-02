@@ -44,6 +44,7 @@ class LwrSafeCartesian
     void directStateCallback(const std_msgs::String::ConstPtr& stateMsg);
     void publishToHardware();
     void publishToApplication();
+    void publishToTF();
 
     // variables
     std::string m_setJointTopic;

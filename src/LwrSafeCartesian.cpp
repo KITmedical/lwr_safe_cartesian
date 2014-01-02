@@ -123,6 +123,7 @@ LwrSafeCartesian::directGetJointCallback(const sensor_msgs::JointState::ConstPtr
   cartXPose.pose.getQuat(m_lastCartesianPose.orientation.w, m_lastCartesianPose.orientation.x, m_lastCartesianPose.orientation.y, m_lastCartesianPose.orientation.z);
 
   publishToApplication();
+  publishToTF();
 }
 
 void
@@ -142,5 +143,10 @@ LwrSafeCartesian::publishToApplication()
 {
   m_getJointTopicPub.publish(m_lastJointState);
   m_getCartesianTopicPub.publish(m_lastCartesianPose);
+}
+
+void
+LwrSafeCartesian::publishToTF()
+{
 }
 /*------------------------------------------------------------------------}}}-*/
