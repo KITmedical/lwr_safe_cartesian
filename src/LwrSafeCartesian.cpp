@@ -74,6 +74,10 @@ LwrSafeCartesian::setCartesianCallback(const geometry_msgs::Pose::ConstPtr& pose
   LwrJoints joints;
   LwrErrorMsg kinematicReturn;
   kinematicReturn = Lwr::inverseKinematics(joints, cartXPose);
+
+  m_currentState.data = Lwr::errorToString(kinematicReturn);
+  m_stateTopicPub.publish(m_currentState);
+  
   if (kinematicReturn != LWR_OK && kinematicReturn != (LWR_WARNING | LWR_CLOSE_TO_SINGULARITY)) {
     ROS_WARN_STREAM("Lwr::inverseKinematics() failed: " << kinematicReturn);
     return;
@@ -101,8 +105,8 @@ LwrSafeCartesian::directGetJointCallback(const sensor_msgs::JointState::ConstPtr
     ROS_WARN_STREAM("Lwr::forwardKinematics() failed: " << kinematicReturn);
     return;
   }
-  cartXPose.pose.getPos(m_lastCartesianState.position.x, m_lastCartesianState.position.y, m_lastCartesianState.position.z);
-  cartXPose.pose.getQuat(m_lastCartesianState.orientation.w, m_lastCartesianState.orientation.x, m_lastCartesianState.orientation.y, m_lastCartesianState.orientation.z);
+  cartXPose.pose.getPos(m_lastCartesianPose.position.x, m_lastCartesianPose.position.y, m_lastCartesianPose.position.z);
+  cartXPose.pose.getQuat(m_lastCartesianPose.orientation.w, m_lastCartesianPose.orientation.x, m_lastCartesianPose.orientation.y, m_lastCartesianPose.orientation.z);
 
   publishToApplication();
 }
@@ -123,6 +127,6 @@ void
 LwrSafeCartesian::publishToApplication()
 {
   m_getJointTopicPub.publish(m_lastJointState);
-  m_getCartesianTopicPub.publish(m_lastCartesianState);
+  m_getCartesianTopicPub.publish(m_lastCartesianPose);
 }
 /*------------------------------------------------------------------------}}}-*/

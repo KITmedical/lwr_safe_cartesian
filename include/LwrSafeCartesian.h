@@ -67,8 +67,9 @@ class LwrSafeCartesian
     ros::Subscriber m_directStateTopicSub;
     sensor_msgs::JointState m_lastJointState;
     sensor_msgs::JointState m_targetJointState;
-    geometry_msgs::Pose m_lastCartesianState;
-    geometry_msgs::Pose m_targetCartesianState;
+    geometry_msgs::Pose m_lastCartesianPose;
+    geometry_msgs::Pose m_targetCartesianPose;
+    std_msgs::String m_currentState;
 };
 
 #endif // _LWR_SAFE_CARTESIAN_H_
