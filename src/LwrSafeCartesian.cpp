@@ -7,6 +7,7 @@
 
 // custom includes
 #include <ahbstring.h>
+#include <safe_cartesian_moveit/CollisionCheckMoveIt.hpp>
 #include <LwrLibrary.hpp>
 
 
@@ -44,6 +45,8 @@ LwrSafeCartesian::LwrSafeCartesian(const std::string& p_robotName, const std::st
   m_directGetJointTopicSub = m_node.subscribe<sensor_msgs::JointState>(m_directGetJointTopic, 1, &LwrSafeCartesian::directGetJointCallback, this);
   m_directSetJointTopicPub = m_node.advertise<sensor_msgs::JointState>(m_directSetJointTopic, 1);
   m_directStateTopicSub = m_node.subscribe<std_msgs::String>(m_directStateTopic, 1, &LwrSafeCartesian::directStateCallback, this);
+
+  m_collision_check = new CollisionCheckMoveIt();
 }
 /*------------------------------------------------------------------------}}}-*/
 
@@ -69,8 +72,12 @@ LwrSafeCartesian::setJointCallback(const sensor_msgs::JointState::ConstPtr& join
     }
   }
 
-  m_targetJointState = *jointsMsg;
+  if (m_collision_check->hasCollision(*jointsMsg)) {
+    std::cout << "------------------> COLLISION <---------------" << std::endl;
+    return;
+  }
 
+  m_targetJointState = *jointsMsg;
   publishToHardware();
 }
 
@@ -105,11 +112,19 @@ LwrSafeCartesian::setCartesianCallback(const geometry_msgs::Pose::ConstPtr& pose
     ROS_WARN_STREAM("Lwr::inverseKinematics() failed: " << kinematicReturn);
     return;
   }
+
+  sensor_msgs::JointState unsafeTargetJointState(m_targetJointState);
   for (size_t jointIdx = 0; jointIdx < m_targetJointState.position.size(); jointIdx++) {
-    m_targetJointState.position[jointIdx] = joints.j[jointIdx];
+    unsafeTargetJointState.position[jointIdx] = joints.j[jointIdx];
   }
   //std::cout << "m_targetJointState: " << m_targetJointState << std::endl;
 
+  if (m_collision_check->hasCollision(unsafeTargetJointState)) {
+    std::cout << "------------------> COLLISION <---------------" << std::endl;
+    return;
+  }
+
+  m_targetJointState = unsafeTargetJointState;
   publishToHardware();
 }
 

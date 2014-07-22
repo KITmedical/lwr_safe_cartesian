@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   ahbstring
   lwr_analytical_kinematics
   roscpp
+  safe_cartesian_moveit
 )
 
 ## System dependencies are found with CMake's conventions

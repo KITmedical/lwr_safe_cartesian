@@ -12,6 +12,7 @@
 // custom includes
 
 // forward declarations
+class CollisionCheckMoveIt;
 
 
 class LwrSafeCartesian
@@ -74,6 +75,8 @@ class LwrSafeCartesian
     geometry_msgs::Pose m_lastCartesianPose;
     geometry_msgs::Pose m_targetCartesianPose;
     std_msgs::String m_currentState;
+
+    CollisionCheckMoveIt* m_collision_check;
 };
 
 #endif // _LWR_SAFE_CARTESIAN_H_
