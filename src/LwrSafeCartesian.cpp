@@ -11,6 +11,26 @@
 #include <LwrLibrary.hpp>
 
 
+#define LBR_MNJ 7
+
+double
+joint_dist(const sensor_msgs::JointState& j1, const sensor_msgs::JointState& j2)
+{
+  if (j1.position.size() != j2.position.size()) {
+    ROS_ERROR("joint_dist: Unequal number of joints");
+    return INFINITY;
+  }
+
+  double dist = 0;
+  for (size_t joint_idx = 0; joint_idx < j1.position.size(); joint_idx++) {
+    double d = j1.position[joint_idx] - j2.position[joint_idx];
+    dist += d * d;
+  }
+  dist = sqrt(dist);
+
+  return dist;
+}
+
 /*---------------------------------- public: -----------------------------{{{-*/
 LwrSafeCartesian::LwrSafeCartesian(const std::string& p_robotName, const std::string& p_setJointTopic, const std::string& p_getJointTopic, const std::string& p_setCartesianTopic, const std::string& p_getCartesianTopic, const std::string& p_stateTopic, const std::string& p_directSetJointTopic, const std::string& p_directGetJointTopic, const std::string& p_directStateTopic)
   :m_robotName(p_robotName),
@@ -21,7 +41,15 @@ LwrSafeCartesian::LwrSafeCartesian(const std::string& p_robotName, const std::st
    m_stateTopic(p_stateTopic),
    m_directSetJointTopic(p_directSetJointTopic),
    m_directGetJointTopic(p_directGetJointTopic),
-   m_directStateTopic(p_directStateTopic)
+   m_directStateTopic(p_directStateTopic),
+   m_gpi(LBR_MNJ),
+   m_gpiPosCurrentBuffer(LBR_MNJ, 0),
+   m_gpiPosTargetBuffer(LBR_MNJ, 0),
+   m_gpiPosMinBuffer(LBR_MNJ, 0),
+   m_gpiPosMaxBuffer(LBR_MNJ, 0),
+   m_gpiVelCurrentBuffer(LBR_MNJ, 0),
+   m_gpiVelMaxBuffer(LBR_MNJ, m_velMax),
+   m_gpiAccelMaxBuffer(LBR_MNJ, m_accelMax)
 {
   // ros
   m_lastJointState.position.resize(LWR_JOINTS, 0);
@@ -47,10 +75,61 @@ LwrSafeCartesian::LwrSafeCartesian(const std::string& p_robotName, const std::st
   m_directStateTopicSub = m_node.subscribe<std_msgs::String>(m_directStateTopic, 1, &LwrSafeCartesian::directStateCallback, this);
 
   m_collision_check = new CollisionCheckMoveIt();
+  // gpi
+  for (size_t jointIdx = 0; jointIdx < LBR_MNJ; jointIdx++) {
+    m_gpiPosMinBuffer[jointIdx] = -1 * Lwr::jointLimits.j[jointIdx];
+    m_gpiPosMaxBuffer[jointIdx] = Lwr::jointLimits.j[jointIdx];
+  }
+  m_gpi.setXTarget(m_gpiPosTargetBuffer);
+  m_gpi.setXLast(m_gpiPosCurrentBuffer);
+  m_gpi.setVLast(m_gpiVelCurrentBuffer);
+  m_gpi.setXMin(m_gpiPosMinBuffer);
+  m_gpi.setXMax(m_gpiPosMaxBuffer);
+  m_gpi.setVMax(m_gpiVelMaxBuffer);
+  m_gpi.setAMax(m_gpiAccelMaxBuffer);
+  m_gpi.setDt(0.1);
+  m_gpi.setMode(1);
 }
 /*------------------------------------------------------------------------}}}-*/
 
 /*---------------------------------- private: ----------------------------{{{-*/
+bool
+LwrSafeCartesian::pathHasCollision(const sensor_msgs::JointState& targetJointState)
+{
+  if (joint_dist(m_lastJointState, targetJointState) < path_collision_check_dist_threshold) {
+    return m_collision_check->hasCollision(targetJointState);
+  } else {
+    ROS_INFO("> path_collision_check_dist_threshold");
+    for (size_t jointIdx = 0; jointIdx < LBR_MNJ; jointIdx++) {
+      m_gpiPosTargetBuffer[jointIdx] = targetJointState.position[jointIdx];
+    }
+    m_gpi.setXTarget(m_gpiPosTargetBuffer);
+
+    std::vector<sensor_msgs::JointState> targetJointStateVec;
+    while (true) {
+      m_gpi.interpolate();
+      m_gpi.getXNow(m_gpiPosCurrentBuffer);
+
+      // target not reachable
+      if (targetJointStateVec.size() != 0 && std::equal(m_gpiPosCurrentBuffer.begin(), m_gpiPosCurrentBuffer.end(), targetJointStateVec[targetJointStateVec.size() - 1].position.begin())) {
+        ROS_INFO("Target not reachable, counting this as collision");
+        return true;
+      }
+
+      sensor_msgs::JointState intermediate_state(targetJointState);
+      intermediate_state.position = m_gpiPosCurrentBuffer;
+      targetJointStateVec.push_back(intermediate_state);
+
+      // target reached
+      if (std::equal(m_gpiPosCurrentBuffer.begin(), m_gpiPosCurrentBuffer.end(), targetJointState.position.begin())) {
+        break;
+      }
+    }
+
+    return m_collision_check->hasPathCollision(targetJointStateVec);
+  }
+}
+
 void
 LwrSafeCartesian::setJointCallback(const sensor_msgs::JointState::ConstPtr& jointsMsg)
 {
@@ -72,7 +151,7 @@ LwrSafeCartesian::setJointCallback(const sensor_msgs::JointState::ConstPtr& join
     }
   }
 
-  if (m_collision_check->hasCollision(*jointsMsg)) {
+  if (pathHasCollision(*jointsMsg)) {
     std::cout << "------------------> COLLISION <---------------" << std::endl;
     m_currentState.data = "SAFE_LWR_ERROR|SAFE_LWR_COLLISION";
     m_stateTopicPub.publish(m_currentState);
@@ -121,7 +200,7 @@ LwrSafeCartesian::setCartesianCallback(const geometry_msgs::Pose::ConstPtr& pose
   }
   //std::cout << "m_targetJointState: " << m_targetJointState << std::endl;
 
-  if (m_collision_check->hasCollision(unsafeTargetJointState)) {
+  if (pathHasCollision(unsafeTargetJointState)) {
     std::cout << "------------------> COLLISION <---------------" << std::endl;
     m_currentState.data = "SAFE_LWR_ERROR|SAFE_LWR_COLLISION";
     m_stateTopicPub.publish(m_currentState);
