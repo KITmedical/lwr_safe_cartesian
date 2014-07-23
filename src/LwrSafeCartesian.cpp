@@ -74,6 +74,8 @@ LwrSafeCartesian::setJointCallback(const sensor_msgs::JointState::ConstPtr& join
 
   if (m_collision_check->hasCollision(*jointsMsg)) {
     std::cout << "------------------> COLLISION <---------------" << std::endl;
+    m_currentState.data = "SAFE_LWR_ERROR|SAFE_LWR_COLLISION";
+    m_stateTopicPub.publish(m_currentState);
     return;
   }
 
@@ -121,6 +123,8 @@ LwrSafeCartesian::setCartesianCallback(const geometry_msgs::Pose::ConstPtr& pose
 
   if (m_collision_check->hasCollision(unsafeTargetJointState)) {
     std::cout << "------------------> COLLISION <---------------" << std::endl;
+    m_currentState.data = "SAFE_LWR_ERROR|SAFE_LWR_COLLISION";
+    m_stateTopicPub.publish(m_currentState);
     return;
   }
 
