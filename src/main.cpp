@@ -7,15 +7,6 @@ main(int argc, char** argv)
   ros::init(argc, argv, "lwr_safe_cartesian");
 
   std::string robotName = "lwr";
-  std::string setJointTopic = "lwr/set_joint";
-  std::string getJointTopic = "lwr/get_joint";
-  std::string setCartesianTopic = "lwr/set_cartesian";
-  std::string getCartesianTopic = "lwr/get_cartesian";
-  std::string stateTopic = "lwr/state";
-
-  std::string directSetJointTopic = "lwr/direct/set_joint";
-  std::string directGetJointTopic = "lwr/direct/get_joint";
-  std::string directStateTopic = "lwr/direct/state";
 
   const char optstring[] = "";
   struct option longopts[] = {

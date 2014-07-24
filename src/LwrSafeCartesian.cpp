@@ -55,10 +55,12 @@ LwrSafeCartesian::LwrSafeCartesian(const std::string& p_robotName)
   for (size_t jointIdx = 0; jointIdx < LWR_JOINTS; jointIdx++) {
     m_jointNames[jointIdx] = m_robotName + "_" + Lwr::jointNames[jointIdx] + "_joint";
   }
+  m_targetJointState.name = m_jointNames;
 
   m_setJointTopicSub = m_node.subscribe<sensor_msgs::JointState>("set_joint", 1, &LwrSafeCartesian::setJointCallback, this);
   m_getJointTopicPub = m_node.advertise<sensor_msgs::JointState>("get_joint", 1);
   m_setCartesianTopicSub = m_node.subscribe<geometry_msgs::Pose>("set_cartesian", 1, &LwrSafeCartesian::setCartesianCallback, this);
+  m_setUnsafeCartesianTopicSub = m_node.subscribe<geometry_msgs::Pose>("unsafe/set_cartesian", 1, &LwrSafeCartesian::setUnsafeCartesianCallback, this);
   m_getCartesianTopicPub = m_node.advertise<geometry_msgs::Pose>("get_cartesian", 1);
   m_stateTopicPub = m_node.advertise<std_msgs::String>("state", 1);
 
@@ -155,10 +157,8 @@ LwrSafeCartesian::setJointCallback(const sensor_msgs::JointState::ConstPtr& join
 }
 
 void
-LwrSafeCartesian::setCartesianCallback(const geometry_msgs::Pose::ConstPtr& poseMsg)
+LwrSafeCartesian::doCartesian(const geometry_msgs::Pose::ConstPtr& poseMsg, bool collision_checking)
 {
-  //std::cout << "setCartesianCallback: poseMsg=\n" << *poseMsg << std::endl;
-
   tf::Pose tfpose;
   tf::poseMsgToTF(*poseMsg, tfpose);
   tf::Vector3 tforigin = tfpose.getOrigin();
@@ -192,7 +192,7 @@ LwrSafeCartesian::setCartesianCallback(const geometry_msgs::Pose::ConstPtr& pose
   }
   //std::cout << "unsafeTargetJointState: " << unsafeTargetJointState << std::endl;
 
-  if (pathHasCollision(unsafeTargetJointState)) {
+  if (collision_checking && pathHasCollision(unsafeTargetJointState)) {
     std::cout << "------------------> COLLISION <---------------" << std::endl;
     m_currentState.data = "SAFE_LWR_ERROR|SAFE_LWR_COLLISION";
     m_stateTopicPub.publish(m_currentState);
@@ -201,6 +201,20 @@ LwrSafeCartesian::setCartesianCallback(const geometry_msgs::Pose::ConstPtr& pose
 
   m_targetJointState = unsafeTargetJointState;
   publishToHardware();
+}
+
+void
+LwrSafeCartesian::setCartesianCallback(const geometry_msgs::Pose::ConstPtr& poseMsg)
+{
+  //std::cout << "setCartesianCallback: poseMsg=\n" << *poseMsg << std::endl;
+  doCartesian(poseMsg);
+}
+
+void
+LwrSafeCartesian::setUnsafeCartesianCallback(const geometry_msgs::Pose::ConstPtr& poseMsg)
+{
+  //std::cout << "setUnsafeCartesianCallback: poseMsg=\n" << *poseMsg << std::endl;
+  doCartesian(poseMsg, false);
 }
 
 void
