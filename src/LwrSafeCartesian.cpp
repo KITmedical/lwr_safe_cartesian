@@ -198,7 +198,7 @@ LwrSafeCartesian::setCartesianCallback(const geometry_msgs::Pose::ConstPtr& pose
   for (size_t jointIdx = 0; jointIdx < m_targetJointState.position.size(); jointIdx++) {
     unsafeTargetJointState.position[jointIdx] = joints.j[jointIdx];
   }
-  //std::cout << "m_targetJointState: " << m_targetJointState << std::endl;
+  //std::cout << "unsafeTargetJointState: " << unsafeTargetJointState << std::endl;
 
   if (pathHasCollision(unsafeTargetJointState)) {
     std::cout << "------------------> COLLISION <---------------" << std::endl;
