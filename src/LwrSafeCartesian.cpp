@@ -34,6 +34,7 @@ joint_dist(const sensor_msgs::JointState& j1, const sensor_msgs::JointState& j2)
 /*---------------------------------- public: -----------------------------{{{-*/
 LwrSafeCartesian::LwrSafeCartesian(const std::string& p_robotName)
   :m_robotName(p_robotName),
+   m_current_nsparam(0),
    m_gpi(LBR_MNJ),
    m_gpiPosCurrentBuffer(LBR_MNJ, 0),
    m_gpiPosTargetBuffer(LBR_MNJ, 0),
@@ -164,7 +165,7 @@ LwrSafeCartesian::doCartesian(const geometry_msgs::Pose::ConstPtr& poseMsg, bool
   tf::Vector3 tforigin = tfpose.getOrigin();
   tf::Quaternion tforientation = tfpose.getRotation();
   LwrXCart cartXPose;
-  cartXPose.nsparam = 0;
+  cartXPose.nsparam = m_current_nsparam;
   cartXPose.config = 2;
   cartXPose.pose.setPos(tforigin.x(), tforigin.y(), tforigin.z());
   double x, y, z, w;
@@ -175,6 +176,14 @@ LwrSafeCartesian::doCartesian(const geometry_msgs::Pose::ConstPtr& poseMsg, bool
   cartXPose.pose.setQuat(w, x, y, z);
   LwrJoints joints;
   LwrErrorMsg kinematicReturn;
+  LwrElbowInterval currentMargin;
+  LwrElbowInterval reachable[11];
+  LwrElbowInterval blocked[11];
+  LwrElbowInterval blockedPerJoint[7][3];
+  Lwr::elbowIntervals(currentMargin, reachable, blocked, blockedPerJoint, cartXPose);
+  for (size_t ival_idx = 0; ival_idx < 11; ival_idx++) {
+    std::cout << "reachable[" << ival_idx << "]=" << reachable[ival_idx] << std::endl;
+  }
   kinematicReturn = Lwr::inverseKinematics(joints, cartXPose);
 
   m_currentState.data = Lwr::errorToString(kinematicReturn);
@@ -199,6 +208,7 @@ LwrSafeCartesian::doCartesian(const geometry_msgs::Pose::ConstPtr& poseMsg, bool
     return;
   }
 
+  m_current_nsparam = cartXPose.nsparam;
   m_targetJointState = unsafeTargetJointState;
   publishToHardware();
 }

@@ -74,6 +74,7 @@ class LwrSafeCartesian
     geometry_msgs::Pose m_lastCartesianPose;
     geometry_msgs::Pose m_targetCartesianPose;
     std_msgs::String m_currentState;
+    double m_current_nsparam;
 
     CollisionCheckMoveIt* m_collision_check;
     GeneralPurposeInterpolator m_gpi;
