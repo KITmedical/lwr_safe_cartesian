@@ -183,6 +183,8 @@ LwrSafeCartesian::doCartesian(const geometry_msgs::Pose::ConstPtr& poseMsg, bool
   elbowIntervalReturn = Lwr::elbowIntervals(currentMargin, reachable, blocked, blockedPerJoint, cartXPose);
   if (elbowIntervalReturn != LWR_OK) {
     ROS_WARN_STREAM("Lwr::elbowIntervals() failed: " << elbowIntervalReturn);
+    m_currentState.data = "SAFE_LWR_ERROR|SAFE_LWR_ELBOW_INTERVAL";
+    m_stateTopicPub.publish(m_currentState);
     return;
   }
   double best_nsparam = 1e6; // best = closest to zero
@@ -218,6 +220,8 @@ LwrSafeCartesian::doCartesian(const geometry_msgs::Pose::ConstPtr& poseMsg, bool
   //printf("kinematicReturn=0x%02X=%s\n", kinematicReturn, Lwr::errorToString(kinematicReturn).c_str());
   if (kinematicReturn != LWR_OK && kinematicReturn != (LWR_WARNING | LWR_CLOSE_TO_SINGULARITY)) {
     ROS_WARN_STREAM("Lwr::inverseKinematics() failed: " << kinematicReturn);
+    m_currentState.data = "SAFE_LWR_ERROR|SAFE_LWR_INVERSE_KINEMATICS";
+    m_stateTopicPub.publish(m_currentState);
     return;
   }
 
