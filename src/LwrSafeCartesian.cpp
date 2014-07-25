@@ -175,15 +175,41 @@ LwrSafeCartesian::doCartesian(const geometry_msgs::Pose::ConstPtr& poseMsg, bool
   z = tforientation.z();
   cartXPose.pose.setQuat(w, x, y, z);
   LwrJoints joints;
-  LwrErrorMsg kinematicReturn;
   LwrElbowInterval currentMargin;
   LwrElbowInterval reachable[11];
   LwrElbowInterval blocked[11];
   LwrElbowInterval blockedPerJoint[7][3];
-  Lwr::elbowIntervals(currentMargin, reachable, blocked, blockedPerJoint, cartXPose);
-  for (size_t ival_idx = 0; ival_idx < 11; ival_idx++) {
-    std::cout << "reachable[" << ival_idx << "]=" << reachable[ival_idx] << std::endl;
+  LwrErrorMsg elbowIntervalReturn;
+  elbowIntervalReturn = Lwr::elbowIntervals(currentMargin, reachable, blocked, blockedPerJoint, cartXPose);
+  if (elbowIntervalReturn != LWR_OK) {
+    ROS_WARN_STREAM("Lwr::elbowIntervals() failed: " << elbowIntervalReturn);
+    return;
   }
+  double best_nsparam = 1e6; // best = closest to zero
+  for (size_t ival_idx = 0; ival_idx < 11; ival_idx++) {
+    if (!reachable[ival_idx].valid) {
+      continue;
+    }
+
+    //std::cout << "reachable[" << ival_idx << "]=" << reachable[ival_idx] << std::endl;
+    if (reachable[ival_idx].lower <= 0 and reachable[ival_idx].upper >= 0) {
+      best_nsparam = 0;
+      break;
+    } else {
+      double local_best_nsparam;
+      if (std::abs(reachable[ival_idx].lower) < std::abs(reachable[ival_idx].upper)) {
+        local_best_nsparam = reachable[ival_idx].lower;
+      } else {
+        local_best_nsparam = reachable[ival_idx].upper;
+      }
+      if (std::abs(local_best_nsparam) < std::abs(best_nsparam)) {
+        best_nsparam = local_best_nsparam;
+      }
+    }
+  }
+  //std::cout << "best_nsparam=" << best_nsparam << std::endl;
+  cartXPose.nsparam = best_nsparam;
+  LwrErrorMsg kinematicReturn;
   kinematicReturn = Lwr::inverseKinematics(joints, cartXPose);
 
   m_currentState.data = Lwr::errorToString(kinematicReturn);
