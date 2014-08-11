@@ -96,6 +96,10 @@ LwrSafeCartesian::pathHasCollision(const sensor_msgs::JointState& targetJointSta
   } else {
     ROS_INFO("Checking PATH for collisions");
     for (size_t jointIdx = 0; jointIdx < LBR_MNJ; jointIdx++) {
+      m_gpiPosCurrentBuffer[jointIdx] = m_lastJointState.position[jointIdx];
+    }
+    m_gpi.setXLast(m_gpiPosCurrentBuffer);
+    for (size_t jointIdx = 0; jointIdx < LBR_MNJ; jointIdx++) {
       m_gpiPosTargetBuffer[jointIdx] = targetJointState.position[jointIdx];
     }
     m_gpi.setXTarget(m_gpiPosTargetBuffer);
@@ -120,6 +124,7 @@ LwrSafeCartesian::pathHasCollision(const sensor_msgs::JointState& targetJointSta
         break;
       }
     }
+    //ROS_INFO("targetJointStateVec.size()=%zd", targetJointStateVec.size());
 
     return m_collision_check->hasPathCollision(targetJointStateVec);
   }
