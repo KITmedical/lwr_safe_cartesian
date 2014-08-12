@@ -131,19 +131,25 @@ LwrSafeCartesian::pathHasCollision(const sensor_msgs::JointState& targetJointSta
 }
 
 void
-LwrSafeCartesian::setJointCallback(const sensor_msgs::JointState::ConstPtr& jointsMsg)
+LwrSafeCartesian::setJointCallback(const sensor_msgs::JointState::ConstPtr& p_jointsMsg)
 {
-  //std::cout << "setJointCallback: jointsMsg=\n" << *jointsMsg << std::endl;
+  sensor_msgs::JointState jointsMsg(*p_jointsMsg);
+  //std::cout << "setJointCallback: jointsMsg=\n" << jointsMsg << std::endl;
 
-  if (jointsMsg->position.size() != LWR_JOINTS) {
+  if (jointsMsg.position.size() != LWR_JOINTS) {
     ROS_FATAL_STREAM("Wrong number of joints. Will not move robot at all.\n");
     m_currentState.data = "SAFE_LWR_ERROR|SAFE_LWR_WRONG_NUMBER_OF_JOINTS";
     m_stateTopicPub.publish(m_currentState);
     return;
   }
 
+  // use default names
+  if (jointsMsg.name.size() == 0) {
+    jointsMsg.name = m_jointNames;
+  }
+
   for (size_t jointIdx = 0; jointIdx < LWR_JOINTS; jointIdx++) {
-    if (std::abs(jointsMsg->position[jointIdx]) > Lwr::jointLimits.j[jointIdx]) {
+    if (std::abs(jointsMsg.position[jointIdx]) > Lwr::jointLimits.j[jointIdx]) {
       ROS_FATAL_STREAM("Joint" << jointIdx << " beyond joint limit (" << Lwr::jointLimits.j[jointIdx] << "). Will not move robot at all.\n");
       m_currentState.data = "SAFE_LWR_ERROR|SAFE_LWR_JOINT_LIMIT_EXCEEDED";
       m_stateTopicPub.publish(m_currentState);
@@ -151,14 +157,14 @@ LwrSafeCartesian::setJointCallback(const sensor_msgs::JointState::ConstPtr& join
     }
   }
 
-  if (pathHasCollision(*jointsMsg)) {
+  if (pathHasCollision(jointsMsg)) {
     std::cout << "------------------> COLLISION <---------------" << std::endl;
     m_currentState.data = "SAFE_LWR_ERROR|SAFE_LWR_COLLISION";
     m_stateTopicPub.publish(m_currentState);
     return;
   }
 
-  m_targetJointState = *jointsMsg;
+  m_targetJointState = jointsMsg;
   publishToHardware();
 }
 
