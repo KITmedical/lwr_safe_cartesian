@@ -150,7 +150,7 @@ LwrSafeCartesian::setJointCallback(const sensor_msgs::JointState::ConstPtr& p_jo
 
   for (size_t jointIdx = 0; jointIdx < LWR_JOINTS; jointIdx++) {
     if (std::abs(jointsMsg.position[jointIdx]) > Lwr::jointLimits.j[jointIdx]) {
-      ROS_FATAL_STREAM("Joint" << jointIdx << " beyond joint limit (" << Lwr::jointLimits.j[jointIdx] << "). Will not move robot at all.\n");
+      ROS_FATAL_STREAM("Joint" << jointIdx << " beyond joint limit (is=" << jointsMsg.position[jointIdx] << " limit=" << Lwr::jointLimits.j[jointIdx] << "). Will not move robot at all.");
       m_currentState.data = "SAFE_LWR_ERROR|SAFE_LWR_JOINT_LIMIT_EXCEEDED";
       m_stateTopicPub.publish(m_currentState);
       return;
