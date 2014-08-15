@@ -225,9 +225,6 @@ LwrSafeCartesian::doCartesian(const geometry_msgs::Pose::ConstPtr& poseMsg, bool
   LwrErrorMsg kinematicReturn;
   kinematicReturn = Lwr::inverseKinematics(joints, cartXPose);
 
-  m_currentState.data = Lwr::errorToString(kinematicReturn);
-  m_stateTopicPub.publish(m_currentState);
-  
   //printf("kinematicReturn=0x%02X=%s\n", kinematicReturn, Lwr::errorToString(kinematicReturn).c_str());
   if (kinematicReturn != LWR_OK && kinematicReturn != (LWR_WARNING | LWR_CLOSE_TO_SINGULARITY)) {
     ROS_WARN_STREAM("Lwr::inverseKinematics() failed: " << kinematicReturn);
@@ -252,6 +249,8 @@ LwrSafeCartesian::doCartesian(const geometry_msgs::Pose::ConstPtr& poseMsg, bool
   m_current_nsparam = cartXPose.nsparam;
   m_targetJointState = unsafeTargetJointState;
   publishToHardware();
+  m_currentState.data = Lwr::errorToString(kinematicReturn);
+  m_stateTopicPub.publish(m_currentState);
 }
 
 void
