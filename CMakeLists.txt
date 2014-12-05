@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   safe_cartesian_moveit
   general_purpose_interpolator
+  safe_cartesian_msgs
 )
 
 ## System dependencies are found with CMake's conventions

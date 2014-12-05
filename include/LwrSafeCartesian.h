@@ -11,6 +11,8 @@
 
 // custom includes
 #include <GeneralPurposeInterpolator.hpp>
+#include <safe_cartesian_msgs/ElbowState.h>
+#include <safe_cartesian_msgs/SetElbow.h>
 
 // forward declarations
 class CollisionCheckMoveIt;
@@ -49,6 +51,7 @@ class LwrSafeCartesian
     void setUnsafeCartesianCallback(const geometry_msgs::Pose::ConstPtr& poseMsg);
     void directGetJointCallback(const sensor_msgs::JointState::ConstPtr& jointsMsg);
     void directStateCallback(const std_msgs::String::ConstPtr& stateMsg);
+    bool setElbowCallback(safe_cartesian_msgs::SetElbow::Request& request, safe_cartesian_msgs::SetElbow::Response& response);
     void publishToHardware();
     void publishToApplication();
     void publishToTF();
@@ -69,12 +72,14 @@ class LwrSafeCartesian
     ros::Subscriber m_directGetJointTopicSub;
     ros::Publisher m_directSetJointTopicPub;
     ros::Subscriber m_directStateTopicSub;
+    ros::ServiceServer m_setElbowService;
     sensor_msgs::JointState m_lastJointState;
     sensor_msgs::JointState m_targetJointState;
     geometry_msgs::Pose m_lastCartesianPose;
     geometry_msgs::Pose m_targetCartesianPose;
     std_msgs::String m_currentState;
     double m_current_nsparam;
+    bool m_fixed_nsparam;
 
     CollisionCheckMoveIt* m_collision_check;
     GeneralPurposeInterpolator m_gpi;

@@ -35,6 +35,7 @@ joint_dist(const sensor_msgs::JointState& j1, const sensor_msgs::JointState& j2)
 LwrSafeCartesian::LwrSafeCartesian(const std::string& p_robotName)
   :m_robotName(p_robotName),
    m_current_nsparam(0),
+   m_fixed_nsparam(true),
    m_gpi(LBR_MNJ),
    m_gpiPosCurrentBuffer(LBR_MNJ, 0),
    m_gpiPosTargetBuffer(LBR_MNJ, 0),
@@ -86,6 +87,8 @@ LwrSafeCartesian::LwrSafeCartesian(const std::string& p_robotName)
 
   m_directSetJointTopicPub = m_node.advertise<sensor_msgs::JointState>("direct/set_joint", 1);
   m_directStateTopicSub = m_node.subscribe<std_msgs::String>("direct/state", 1, &LwrSafeCartesian::directStateCallback, this);
+
+  m_setElbowService = m_node.advertiseService("set_elbow", &LwrSafeCartesian::setElbowCallback, this);
 }
 /*------------------------------------------------------------------------}}}-*/
 
@@ -188,39 +191,44 @@ LwrSafeCartesian::doCartesian(const geometry_msgs::Pose::ConstPtr& poseMsg, bool
   z = tforientation.z();
   cartXPose.pose.setQuat(w, x, y, z);
   LwrJoints joints;
-  LwrElbowInterval currentMargin;
-  LwrElbowInterval reachable[11];
-  LwrElbowInterval blocked[11];
-  LwrElbowInterval blockedPerJoint[7][3];
-  LwrErrorMsg elbowIntervalReturn;
-  elbowIntervalReturn = Lwr::elbowIntervals(currentMargin, reachable, blocked, blockedPerJoint, cartXPose);
-  if (elbowIntervalReturn != LWR_OK) {
-    ROS_WARN_STREAM("Lwr::elbowIntervals() failed: " << elbowIntervalReturn);
-    m_currentState.data = "SAFE_LWR_ERROR|SAFE_LWR_ELBOW_INTERVAL";
-    m_stateTopicPub.publish(m_currentState);
-    return;
-  }
-  double best_nsparam = 1e6; // best = closest to zero
-  for (size_t ival_idx = 0; ival_idx < 11; ival_idx++) {
-    if (!reachable[ival_idx].valid) {
-      continue;
+  double best_nsparam = 0; // best = closest to zero
+  if (!m_fixed_nsparam) {
+    LwrElbowInterval currentMargin;
+    LwrElbowInterval reachable[11];
+    LwrElbowInterval blocked[11];
+    LwrElbowInterval blockedPerJoint[7][3];
+    LwrErrorMsg elbowIntervalReturn;
+    elbowIntervalReturn = Lwr::elbowIntervals(currentMargin, reachable, blocked, blockedPerJoint, cartXPose);
+    if (elbowIntervalReturn != LWR_OK) {
+      ROS_WARN_STREAM("Lwr::elbowIntervals() failed: " << elbowIntervalReturn);
+      m_currentState.data = "SAFE_LWR_ERROR|SAFE_LWR_ELBOW_INTERVAL";
+      m_stateTopicPub.publish(m_currentState);
+      return;
     }
+    best_nsparam = 1e6;
+    for (size_t ival_idx = 0; ival_idx < 11; ival_idx++) {
+      if (!reachable[ival_idx].valid) {
+        continue;
+      }
 
-    //std::cout << "reachable[" << ival_idx << "]=" << reachable[ival_idx] << std::endl;
-    if (reachable[ival_idx].lower <= 0 and reachable[ival_idx].upper >= 0) {
-      best_nsparam = 0;
-      break;
-    } else {
-      double local_best_nsparam;
-      if (std::abs(reachable[ival_idx].lower) < std::abs(reachable[ival_idx].upper)) {
-        local_best_nsparam = reachable[ival_idx].lower;
+      //std::cout << "reachable[" << ival_idx << "]=" << reachable[ival_idx] << std::endl;
+      if (reachable[ival_idx].lower <= 0 and reachable[ival_idx].upper >= 0) {
+        best_nsparam = 0;
+        break;
       } else {
-        local_best_nsparam = reachable[ival_idx].upper;
-      }
-      if (std::abs(local_best_nsparam) < std::abs(best_nsparam)) {
-        best_nsparam = local_best_nsparam;
+        double local_best_nsparam;
+        if (std::abs(reachable[ival_idx].lower) < std::abs(reachable[ival_idx].upper)) {
+          local_best_nsparam = reachable[ival_idx].lower;
+        } else {
+          local_best_nsparam = reachable[ival_idx].upper;
+        }
+        if (std::abs(local_best_nsparam) < std::abs(best_nsparam)) {
+          best_nsparam = local_best_nsparam;
+        }
       }
     }
+  } else {
+    best_nsparam = m_current_nsparam;
   }
   //std::cout << "best_nsparam=" << best_nsparam << std::endl;
   cartXPose.nsparam = best_nsparam;
@@ -317,5 +325,18 @@ LwrSafeCartesian::publishToApplication()
 void
 LwrSafeCartesian::publishToTF()
 {
+}
+
+bool
+LwrSafeCartesian::setElbowCallback(safe_cartesian_msgs::SetElbow::Request& request, safe_cartesian_msgs::SetElbow::Response& response)
+{
+  if (request.elbow.fixed) {
+    m_fixed_nsparam = true;
+    m_current_nsparam = request.elbow.nsparam;
+  } else {
+    m_fixed_nsparam = false;
+  }
+
+  return true;
 }
 /*------------------------------------------------------------------------}}}-*/
