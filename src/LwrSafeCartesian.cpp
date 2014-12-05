@@ -337,6 +337,7 @@ LwrSafeCartesian::setElbowCallback(safe_cartesian_msgs::SetElbow::Request& reque
     m_fixed_nsparam = false;
   }
 
+  response.success = true;
   return true;
 }
 /*------------------------------------------------------------------------}}}-*/
